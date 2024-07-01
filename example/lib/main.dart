@@ -1,17 +1,12 @@
 import 'package:flutter/material.dart';
 
+import 'ai_food_scanner/ai_food_page.dart';
 import 'ai_food_scanner/ai_food_scanner.dart';
-import 'ai_movie_scanner/ai_movie_page.dart';
-import 'ai_movie_scanner/ai_movie_scanner.dart';
 
 void main() async {
   AiFoodScanner.init(
-    key: "sk-proj-F2qpRAsTD3bx7y0oPSymT3BlbkFJ1aJZjPKBtrV112qxO0N7",
-    organization: "org-LyamYliNXiW6NAF6Y9wSfGkl",
-  );
-  AiMovieScanner.init(
-    key: "sk-proj-F2qpRAsTD3bx7y0oPSymT3BlbkFJ1aJZjPKBtrV112qxO0N7",
-    organization: "org-LyamYliNXiW6NAF6Y9wSfGkl",
+    key: "OPEN_AI_GPT_KEY",
+    organization: "OPEN_AI_GPT_ORGANIZATION",
   );
   runApp(const MyApp());
 }
@@ -28,7 +23,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const AiMovieScannerPage(),
+      home: const AiFoodScannerPage(),
     );
   }
 }

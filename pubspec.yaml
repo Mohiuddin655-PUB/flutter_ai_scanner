@@ -1,6 +1,6 @@
 name: flutter_ai_scanner
 description: "AI-powered flutter package for document and image scanning with fast, accurate text recognition and OCR using Openai."
-version: 1.0.0
+version: 1.0.1
 repository: https://github.com/Mohiuddin655-PUB/flutter_ai_scanner.git
 
 environment:

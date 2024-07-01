@@ -6,11 +6,17 @@ import 'request.dart';
 import 'response.dart';
 
 class AiScanner {
+  /// OPENAI API KEY
   final String key;
+
+  /// OPENAI API ORGANIZATION
   final String? organization;
 
   const AiScanner({
+    /// OPENAI API KEY
     required this.key,
+
+    /// OPENAI API ORGANIZATION
     this.organization,
   });
 
@@ -25,7 +31,10 @@ class AiScanner {
   }
 
   static void init({
+    /// OPENAI API KEY
     required String key,
+
+    /// OPENAI API ORGANIZATION
     String? organization,
   }) {
     _i = AiScanner(key: key, organization: organization);
