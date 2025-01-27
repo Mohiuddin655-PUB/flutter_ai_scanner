@@ -1,92 +1,66 @@
 import 'dart:convert';
 
-import 'package:flutter_ai_scanner/flutter_ai_scanner.dart';
-
 import 'response.dart';
 
-typedef AiRequestSample = Map<String, dynamic>;
-
-String _kScanPrompt(
-  String type,
-  String preconditions,
-  AiRequestSample sample,
-) {
-  return "Scan the $type and give me $preconditions. Like $sample without unnecessary content. Give me only full json data.";
-}
-
-String _kSuggestPrompt(
-  String type,
-  String preconditions,
-  AiRequestSample sample,
-) {
-  return "Suggest $type depending on the user's conditions ($preconditions). Like $sample without unnecessary content. Give me only full json data.";
-}
-
-class AiRequest<T extends Object?> {
+class AiCompletionRequest<T extends Object?> {
   final String prompt;
-  final String? url;
+  final String? _system;
+  final dynamic data;
   final String? model;
   final int? maxTokens;
+  final int? temperature;
   final int? n;
+  final Map<String, dynamic>? schema;
   final AiResponseDataBuilder<T>? builder;
 
-  const AiRequest({
-    required this.prompt,
-    this.url,
-    this.model,
-    this.maxTokens,
-    this.n,
-    this.builder,
-  });
-
-  AiRequest.scan({
-    required String this.url,
-    required AiRequestSample sample,
-    String category = "photo",
-    String preconditions = "information",
-    this.model,
-    this.maxTokens,
-    this.n,
-    this.builder,
-  }) : prompt = _kScanPrompt(category, preconditions, sample);
-
-  AiRequest.suggest({
-    required AiRequestSample sample,
-    required String category,
-    required String preconditions,
-    this.url,
-    this.model,
-    this.maxTokens,
-    this.n,
-    this.builder,
-  }) : prompt = _kSuggestPrompt(category, preconditions, sample);
-
-  Map<String, dynamic> get data {
-    final isScanMode = url != null && url!.isNotEmpty;
-    return {
-      "model": model ?? "gpt-4-turbo",
-      "messages": [
-        {
-          "role": "user",
-          "content": [
-            {
-              "type": "text",
-              "text": prompt,
-            },
-            if (isScanMode)
-              {
-                "type": "image_url",
-                "image_url": {"url": url},
-              }
-          ]
-        }
-      ],
-      "n": n,
-      "max_tokens": maxTokens,
-    };
+  String? get system {
+    if (schema != null && schema!.isNotEmpty) {
+      if (_system == null || !_system.contains("{SCHEMA}")) {
+        return "Following the json schema and provide me only json. if you not found return null.\nSchema: ${jsonEncode(schema)}";
+      }
+      return _system.replaceAll("{SCHEMA}", jsonEncode(schema));
+    }
+    return null;
   }
 
-  String get body => jsonEncode(data);
-}
+  const AiCompletionRequest({
+    required this.prompt,
+    this.data,
+    this.schema,
+    this.model,
+    this.maxTokens,
+    this.n,
+    this.temperature,
+    this.builder,
+    String? system,
+  }) : _system = system;
 
-class AiFoodRequest<T extends Object> {}
+  @override
+  int get hashCode =>
+      prompt.hashCode ^
+      _system.hashCode ^
+      schema.hashCode ^
+      data.hashCode ^
+      model.hashCode ^
+      maxTokens.hashCode ^
+      n.hashCode ^
+      temperature.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return other is AiCompletionRequest<T> &&
+        other.prompt == prompt &&
+        other._system == _system &&
+        other.schema == schema &&
+        other.data == data &&
+        other.model == model &&
+        other.maxTokens == maxTokens &&
+        other.n == n &&
+        other.temperature == temperature;
+  }
+
+  @override
+  String toString() {
+    return "$AiCompletionRequest<$T>#$hashCode(prompt: $prompt, system: $_system, format: $schema, data: $data, model: $model, maxTokens: $maxTokens, n: $n, temperature: $temperature)";
+  }
+}

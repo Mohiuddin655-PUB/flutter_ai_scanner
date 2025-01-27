@@ -4,18 +4,19 @@ typedef AiResponseDataBuilder<T extends Object?> = T Function(
   Map<String, dynamic> source,
 );
 
-class AiResponse<T extends Object?> {
+class AiCompletionResponse<T extends Object?> {
   final String? id;
   final String? object;
   final int? created;
   final String? model;
-  final List<Choice<T>>? choices;
-  final Usage? usage;
+  final List<AiChoice<T>>? choices;
+  final AiTokenUsage? usage;
   final String? systemFingerprint;
+  final String? serviceTier;
   final int? statusCode;
   final String? error;
 
-  const AiResponse({
+  const AiCompletionResponse({
     this.id,
     this.object,
     this.created,
@@ -23,40 +24,13 @@ class AiResponse<T extends Object?> {
     this.choices,
     this.usage,
     this.systemFingerprint,
+    this.serviceTier,
     this.statusCode,
     this.error,
   });
 
-  factory AiResponse.from(
-    Map<String, dynamic>? source, [
-    AiResponseDataBuilder<T>? builder,
-  ]) {
-    source ??= {};
-    final id = source["id"];
-    final object = source["object"];
-    final created = source["created"];
-    final model = source["model"];
-    final choices = source["choices"];
-    final usage = source["usage"];
-    final systemFingerprint = source["system_fingerprint"];
-    return AiResponse<T>(
-      id: id is String ? id : null,
-      object: object is String ? object : null,
-      created: created is int ? created : null,
-      model: model is String ? model : null,
-      choices: choices is List
-          ? choices.whereType<Map<String, dynamic>>().map((e) {
-              return Choice<T>.from(e, builder);
-            }).toList()
-          : null,
-      usage: usage is Map<String, dynamic> ? Usage.from(usage) : null,
-      systemFingerprint: systemFingerprint is String ? systemFingerprint : null,
-      statusCode: 200,
-    );
-  }
-
-  factory AiResponse.failure(String? error, [int? statusCode]) {
-    return AiResponse(
+  factory AiCompletionResponse.failure(String? error, [int? statusCode]) {
+    return AiCompletionResponse(
       error: error,
       statusCode: statusCode,
     );
@@ -74,165 +48,284 @@ class AiResponse<T extends Object?> {
       "object": object,
       "created": created,
       "model": model,
+      "service_tier": serviceTier,
       "system_fingerprint": systemFingerprint,
-      "choices": choices?.map((e) => e.source),
+      "choices": choices?.map((e) => e.source).toList(),
       "usage": usage?.source,
     };
   }
 
+  String get json => jsonEncode(source);
+
   @override
-  String toString() {
-    return "AiResponse(${source.toString().replaceAll("{", "").replaceAll(",}", "").replaceAll("}", "")})";
+  int get hashCode {
+    if (statusCode != 200) {
+      return statusCode.hashCode ^ error.hashCode;
+    }
+    return id.hashCode ^
+        object.hashCode ^
+        created.hashCode ^
+        model.hashCode ^
+        serviceTier.hashCode ^
+        systemFingerprint.hashCode ^
+        choices.hashCode ^
+        usage.hashCode;
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (other is! AiCompletionResponse<T>) return false;
+    if (statusCode != 200) {
+      return other.statusCode == statusCode && other.error == error;
+    }
+    return other.id == id &&
+        other.object == object &&
+        other.created == created &&
+        other.model == model &&
+        other.serviceTier == systemFingerprint &&
+        other.systemFingerprint == systemFingerprint &&
+        other.choices == choices &&
+        other.usage == usage;
+  }
+
+  @override
+  String toString() => "$AiCompletionResponse#$hashCode($json)";
 }
 
-class Choice<T extends Object?> {
+class AiSafetyRating {
+  final String? category;
+  final String? probability;
+
+  const AiSafetyRating({
+    this.category,
+    this.probability,
+  });
+
+  Map<String, dynamic> get source {
+    return {
+      "category": category,
+      "probability": probability,
+    };
+  }
+
+  String get json => jsonEncode(source);
+
+  @override
+  int get hashCode => category.hashCode ^ probability.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return other is AiSafetyRating &&
+        other.category == category &&
+        other.probability == probability;
+  }
+
+  @override
+  String toString() => "$AiSafetyRating#$hashCode($json)";
+}
+
+class AiChoice<T extends Object?> {
   final int? index;
-  final Message<T>? message;
+  final AiMessage<T>? message;
   final bool? logprobs;
   final String? finishReason;
+  final List<AiSafetyRating>? safetyRatings;
 
-  const Choice({
+  const AiChoice({
     this.index,
     this.message,
     this.logprobs,
     this.finishReason,
+    this.safetyRatings,
   });
-
-  factory Choice.from(
-    Map<String, dynamic>? source, [
-    AiResponseDataBuilder<T>? builder,
-  ]) {
-    source ??= {};
-    final index = source["index"];
-    final message = source["message"];
-    final logprobs = source["logprobs"];
-    final finishReason = source["finish_reason"];
-    return Choice<T>(
-      index: index is int ? index : null,
-      message: message is Map<String, dynamic>
-          ? Message<T>.from(message, builder)
-          : null,
-      logprobs: logprobs is bool ? logprobs : null,
-      finishReason: finishReason is String ? finishReason : null,
-    );
-  }
 
   Map<String, dynamic> get source {
     return {
       "index": index,
       "message": message?.source,
       "logprobs": logprobs,
-      "finish_reason": finishReason
+      "finish_reason": finishReason,
+      "safety_ratings": safetyRatings?.map((e) => e.source).toList(),
     };
   }
 
+  String get json => jsonEncode(source);
+
   @override
-  String toString() {
-    return "Choice(${source.toString().replaceAll("{", "").replaceAll(",}", "").replaceAll("}", "")})";
+  int get hashCode =>
+      index.hashCode ^
+      message.hashCode ^
+      logprobs.hashCode ^
+      finishReason.hashCode ^
+      safetyRatings.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return other is AiChoice<T> &&
+        other.index == index &&
+        other.message == message &&
+        other.logprobs == logprobs &&
+        other.finishReason == finishReason &&
+        other.safetyRatings == safetyRatings;
   }
+
+  @override
+  String toString() => "$AiChoice#$hashCode($json)";
 }
 
-class Message<T extends Object?> {
+class AiMessage<T extends Object?> {
   final String? role;
   final String? content;
+  final String? refusal;
   final T? data;
 
-  const Message({
+  const AiMessage({
     this.role,
     this.content,
+    this.refusal,
     this.data,
   });
-
-  static T? _data<T extends Object?>(
-    String? source,
-    AiResponseDataBuilder<T>? builder,
-  ) {
-    T? data;
-    if (builder != null && source != null) {
-      final raw = _extract(source);
-      if (raw is Map<String, dynamic>) {
-        data = builder(raw);
-      }
-    }
-    return data;
-  }
-
-  static Map<String, dynamic>? _extract(String? source) {
-    source ??= "{}";
-    int start = source.indexOf('{');
-    int end = source.lastIndexOf('}') + 1;
-    if (start == -1 || end == 0) return null;
-    final raw = source.substring(start, end);
-    try {
-      final data = json.decode(raw);
-      return data;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  factory Message.from(
-    Map<String, dynamic>? source, [
-    AiResponseDataBuilder<T>? builder,
-  ]) {
-    source ??= {};
-    final role = source["role"];
-    final content = source["content"];
-    print(content.runtimeType);
-    return Message<T>(
-      role: role is String ? role : null,
-      content: content is String ? content : null,
-      data: content is String ? _data(content, builder) : null,
-    );
-  }
 
   Map<String, dynamic> get source {
     return {
       "role": role,
       "content": content,
+      "refusal": refusal,
     };
   }
 
+  String get json => jsonEncode(source);
+
   @override
-  String toString() {
-    return "Message(${source.toString().replaceAll("{", "").replaceAll(",}", "").replaceAll("}", "")})";
+  int get hashCode => role.hashCode ^ content.hashCode ^ refusal.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return other is AiMessage<T> &&
+        other.role == role &&
+        other.content == content &&
+        other.refusal == refusal;
   }
+
+  @override
+  String toString() => "$AiMessage#$hashCode($json)";
 }
 
-class Usage {
+class AiTokenUsage {
   final int? promptTokens;
   final int? completionTokens;
   final int? totalTokens;
+  final AiPromptTokensDetails? promptTokensDetails;
+  final AiCompletionTokensDetails? completionTokensDetails;
 
-  const Usage({
+  const AiTokenUsage({
     this.promptTokens,
     this.completionTokens,
     this.totalTokens,
+    this.completionTokensDetails,
+    this.promptTokensDetails,
   });
-
-  factory Usage.from(Map<String, dynamic>? source) {
-    source ??= {};
-    final promptTokens = source["prompt_tokens"];
-    final completionTokens = source["completion_tokens"];
-    final totalTokens = source["total_tokens"];
-    return Usage(
-      promptTokens: promptTokens is int ? promptTokens : null,
-      completionTokens: completionTokens is int ? completionTokens : null,
-      totalTokens: totalTokens is int ? totalTokens : null,
-    );
-  }
 
   Map<String, dynamic> get source {
     return {
       "prompt_tokens": promptTokens,
       "completion_tokens": completionTokens,
       "total_tokens": totalTokens,
+      "prompt_tokens_details": promptTokensDetails?.source,
+      "completion_tokens_details": completionTokensDetails?.source,
     };
   }
 
+  String get json => jsonEncode(source);
+
   @override
-  String toString() {
-    return "Usage(${source.toString().replaceAll("{", "").replaceAll(",}", "").replaceAll("}", "")})";
+  int get hashCode =>
+      promptTokens.hashCode ^ completionTokens.hashCode ^ totalTokens.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return other is AiTokenUsage &&
+        other.promptTokens == promptTokens &&
+        other.completionTokens == completionTokens &&
+        other.totalTokens == totalTokens;
   }
+
+  @override
+  String toString() => "$AiTokenUsage#$hashCode($json)";
+}
+
+class AiPromptTokensDetails {
+  final int? audioTokens;
+  final int? cachedTokens;
+
+  const AiPromptTokensDetails({
+    this.audioTokens,
+    this.cachedTokens,
+  });
+
+  Map<String, dynamic> get source {
+    return {
+      "audio_tokens": audioTokens,
+      "cached_tokens": cachedTokens,
+    };
+  }
+
+  String get json => jsonEncode(source);
+
+  @override
+  int get hashCode => audioTokens.hashCode ^ cachedTokens.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return other is AiPromptTokensDetails &&
+        other.audioTokens == audioTokens &&
+        other.cachedTokens == cachedTokens;
+  }
+
+  @override
+  String toString() => "$AiPromptTokensDetails#$hashCode($json)";
+}
+
+class AiCompletionTokensDetails {
+  final int? acceptedPredictionTokens;
+  final int? audioTokens;
+  final int? reasoningTokens;
+  final int? rejectedPredictionTokens;
+
+  const AiCompletionTokensDetails({
+    this.acceptedPredictionTokens,
+    this.audioTokens,
+    this.reasoningTokens,
+    this.rejectedPredictionTokens,
+  });
+
+  Map<String, dynamic> get source {
+    return {
+      "accepted_prediction_tokens": acceptedPredictionTokens,
+      "audio_tokens": audioTokens,
+      "reasoning_tokens": reasoningTokens,
+      "rejected_prediction_tokens": rejectedPredictionTokens,
+    };
+  }
+
+  String get json => jsonEncode(source);
+
+  @override
+  int get hashCode =>
+      acceptedPredictionTokens.hashCode ^
+      audioTokens.hashCode ^
+      reasoningTokens.hashCode ^
+      rejectedPredictionTokens.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return other is AiCompletionTokensDetails &&
+        other.acceptedPredictionTokens == acceptedPredictionTokens &&
+        other.audioTokens == audioTokens &&
+        other.reasoningTokens == reasoningTokens &&
+        other.rejectedPredictionTokens == rejectedPredictionTokens;
+  }
+
+  @override
+  String toString() => "$AiCompletionTokensDetails#$hashCode($json)";
 }

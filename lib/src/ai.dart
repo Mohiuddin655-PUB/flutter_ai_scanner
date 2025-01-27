@@ -1,67 +1,28 @@
-import 'dart:convert';
-
-import 'package:http/http.dart' as http;
-
+import 'delegate.dart';
 import 'request.dart';
 import 'response.dart';
 
-class AiScanner {
-  /// OPENAI API KEY
-  final String key;
+class Ai {
+  Ai._();
 
-  /// OPENAI API ORGANIZATION
-  final String? organization;
+  AiDelegate? _delegate;
 
-  const AiScanner({
-    /// OPENAI API KEY
-    required this.key,
+  static Ai? _i;
 
-    /// OPENAI API ORGANIZATION
-    this.organization,
-  });
+  static Ai get i => _i ??= Ai._();
 
-  static AiScanner? _i;
+  static set delegate(AiDelegate delegate) => i._delegate = delegate;
 
-  static AiScanner get i {
-    if (_i != null) {
-      return _i!;
-    } else {
-      throw UnimplementedError("Ai not initialized yet!");
+  static AiDelegate get delegate {
+    if (i._delegate == null) {
+      throw UnimplementedError("AiDelegate not initialized yet!");
     }
+    return i._delegate!;
   }
 
-  static void init({
-    /// OPENAI API KEY
-    required String key,
-
-    /// OPENAI API ORGANIZATION
-    String? organization,
-  }) {
-    _i = AiScanner(key: key, organization: organization);
-  }
-
-  Future<AiResponse<T>> execute<T>(AiRequest<T> request) {
-    return http
-        .post(
-          Uri.parse("https://api.openai.com/v1/chat/completions"),
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer $key",
-          },
-          body: request.body,
-        )
-        .onError((_, __) => http.Response("$_", 500))
-        .then((value) {
-      if (value.statusCode == 200) {
-        final raw = jsonDecode(value.body);
-        if (raw is Map<String, dynamic>) {
-          return AiResponse.from(raw, request.builder);
-        }
-      }
-      return AiResponse.failure(
-        value.reasonPhrase ?? value.body,
-        value.statusCode,
-      );
-    });
+  static Future<AiCompletionResponse<T>> completions<T>(
+    AiCompletionRequest<T> request,
+  ) {
+    return delegate.completions(request);
   }
 }

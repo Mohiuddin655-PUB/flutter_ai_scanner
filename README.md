@@ -1,131 +1,132 @@
 # flutter_ai_scanner
 
 ## INIT
+
 ```dart
 void main() async {
-  AiFoodScanner.init(
-    key: "OPEN_AI_GPT_KEY",
-    organization: "OPEN_AI_GPT_ORGANIZATION",
+  Ai.delegate = const GptAiDelegate(key: 'YOUR API KEY HERE');
+  // Ai.delegate = const GeminiAiDelegate(key: 'YOUR API KEY HERE');
+  final response = await Ai.completions(
+    AiCompletionRequest(
+      prompt: "i ate one piece medium apple and 2 pieces boiled eggs",
+      system: "Following the json schema and provide me only json. if you not found return null.\nSchema: {SCHEMA}",
+      schema: {
+        "name": "string",
+        "total_calories": "double",
+        "total_protein": "double",
+        "total_fat": "double",
+        "total_carbs": "double",
+        "ingredients": [
+          {
+            "name": "string",
+            "calories": "double",
+            "proteinInGram": "double",
+            "fatInGram": "double",
+            "carbsInGram": "double",
+            "quantity": "int",
+            "size": "string",
+          }
+        ],
+      },
+      builder: (value) => AiData.from(value),
+    ),
   );
-  // ...
+  print(response.choices?.firstOrNull?.message?.data);
 }
 ```
 
 ## DATA MODEL
+
 ```dart
-class AiFoodData {
-  final double? calorie;
+class AiData {
   final String? name;
+  final double? totalCalories;
+  final double? totalProtein;
+  final double? totalFat;
+  final double? totalCarbs;
+  final List<AiDataIngredient>? ingredients;
 
-  const AiFoodData({
-    this.calorie,
+  const AiData({
     this.name,
+    this.totalCalories,
+    this.totalProtein,
+    this.totalFat,
+    this.totalCarbs,
+    this.ingredients,
   });
 
-  factory AiFoodData.from(Object? source) {
-    final data = source is Map<String, dynamic> ? source : {};
-    final calorie = data["calorie"];
-    final name = data["name"];
-    return AiFoodData(
-      calorie: calorie is num ? calorie.toDouble() : null,
-      name: name is String ? name : null,
+  factory AiData.from(Map<String, dynamic> source) {
+    return AiData(
+      name: source['name'] as String?,
+      totalCalories: (source['total_calories'] as num?)?.toDouble(),
+      totalProtein: (source['total_protein'] as num?)?.toDouble(),
+      totalFat: (source['total_fat'] as num?)?.toDouble(),
+      totalCarbs: (source['total_carbs'] as num?)?.toDouble(),
+      ingredients: (source['ingredients'] as List<dynamic>?)
+          ?.map((e) => AiDataIngredient.from(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 
   Map<String, dynamic> get source {
     return {
-      "calorie": calorie,
-      "name": name,
+      'name': name,
+      'total_calories': totalCalories,
+      'total_protein': totalProtein,
+      'total_fat': totalFat,
+      'total_carbs': totalCarbs,
+      'ingredients': ingredients?.map((e) => e.source).toList(),
     };
   }
+
+  @override
+  String toString() => "$AiData($source)";
 }
 
-class AiNutritionData {
-  final double? calorie;
-  final List<AiFoodData>? items;
+class AiDataIngredient {
+  final String? name;
+  final double? calories;
+  final double? proteinInGram;
+  final double? fatInGram;
+  final double? carbsInGram;
+  final int? quantity;
+  final String? size;
 
-  const AiNutritionData({
-    this.calorie,
-    this.items,
+  const AiDataIngredient({
+    this.name,
+    this.calories,
+    this.proteinInGram,
+    this.fatInGram,
+    this.carbsInGram,
+    this.quantity,
+    this.size,
   });
 
-  factory AiNutritionData.from(Object? source) {
-    final data = source is Map<String, dynamic> ? source : {};
-    final calorie = data["calorie"];
-    final items = data["items"];
-    return AiNutritionData(
-      calorie: calorie is num ? calorie.toDouble() : null,
-      items: items is List ? items.map((AiFoodData.from)).toList() : null,
-    );
-  }
-
-  factory AiNutritionData.sample() {
-    final items = [
-      const AiFoodData(name: "Mango", calorie: 34.0),
-      const AiFoodData(name: "Orange", calorie: 21.3)
-    ];
-    return AiNutritionData(
-      calorie: 0.0,
-      items: items,
+  factory AiDataIngredient.from(Map<String, dynamic> source) {
+    return AiDataIngredient(
+      name: source['name'] as String?,
+      calories: (source['calories'] as num?)?.toDouble(),
+      proteinInGram: (source['proteinInGram'] as num?)?.toDouble(),
+      fatInGram: (source['fatInGram'] as num?)?.toDouble(),
+      carbsInGram: (source['carbsInGram'] as num?)?.toDouble(),
+      quantity: source['quantity'] as int?,
+      size: source['size'] as String?,
     );
   }
 
   Map<String, dynamic> get source {
     return {
-      "calorie": calorie,
-      "items": items?.map((e) => e.source),
+      'name': name,
+      'calories': calories,
+      'proteinInGram': proteinInGram,
+      'fatInGram': fatInGram,
+      'carbsInGram': carbsInGram,
+      'quantity': quantity,
+      'size': size,
     };
   }
-}
-```
 
-## AI_SCANNER 
-```dart
-import 'package:flutter_ai_scanner/flutter_ai_scanner.dart';
-
-class AiFoodScanner extends AiScanner {
-  const AiFoodScanner({
-    required super.key,
-    super.organization,
-  });
-
-  static AiFoodScanner? _i;
-
-  static AiFoodScanner get i {
-    if (_i != null) {
-      return _i!;
-    } else {
-      throw UnimplementedError("AiFoodScanner not initialized yet!");
-    }
-  }
-
-  static void init({
-    required String key,
-    String? organization,
-  }) {
-    _i = AiFoodScanner(
-      key: key,
-      organization: organization,
-    );
-  }
-
-  Future<AiResponse<AiNutritionData>> scan(String url) {
-    final json = AiNutritionData.sample().source;
-    return execute(AiRequest<AiNutritionData>.scan(
-      category: "food",
-      preconditions: "nutrition information",
-      sample: json,
-      url: url,
-      builder: AiNutritionData.from,
-      n: 3,
-    ));
-  }
-}
-```
-
-## SCAN IMAGE
-```dart
-Future<AiResponse<AiNutritionData>> scanData(String imageUrl){
-  return AiFoodScanner.i.scan(imageUrl);
+  @override
+  String toString() => "$AiDataIngredient($source)";
 }
 ```

@@ -1,3 +1,3 @@
-## 1.0.1
+## 2.0.0
 
-* initial release.
+* multiple ai supported by delegate system.
