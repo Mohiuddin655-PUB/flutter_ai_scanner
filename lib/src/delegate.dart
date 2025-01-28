@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'request.dart';
 import 'response.dart';
 
+typedef AiDataSource = Map<String, dynamic>;
+
 abstract class AiDelegate {
   /// API NAME
   final String provider;
@@ -23,17 +25,17 @@ abstract class AiDelegate {
     this.organization,
   });
 
-  Map<String, dynamic>? extractData(String? source) {
+  AiDataSource extractData(String? source) {
     source ??= "{}";
     int start = source.indexOf('{');
     int end = source.lastIndexOf('}') + 1;
-    if (start == -1 || end == 0) return null;
+    if (start == -1 || end == 0) return {};
     final raw = source.substring(start, end);
     try {
       final data = jsonDecode(raw);
       return data;
     } catch (_) {
-      return null;
+      return {};
     }
   }
 
@@ -44,43 +46,47 @@ abstract class AiDelegate {
     T? data;
     if (builder != null && source != null) {
       final raw = extractData(source);
-      if (raw is Map<String, dynamic>) {
-        data = builder(raw);
-      }
+      data = builder(raw);
     }
     return data;
   }
 
   AiMessage<T> buildMessage<T>(
-    Map<String, dynamic> source, [
+    AiDataSource source, [
     AiResponseDataBuilder<T>? builder,
-  ]);
+  ]) {
+    return const AiMessage();
+  }
 
-  AiSafetyRating? buildSafetyRating<T>(Map<String, dynamic> source) {
-    return null;
+  AiSafetyRating buildSafetyRating<T>(AiDataSource source) {
+    return const AiSafetyRating();
   }
 
   AiChoice<T> buildChoice<T>(
-    Map<String, dynamic> source, [
+    AiDataSource source, [
     AiResponseDataBuilder<T>? builder,
-  ]);
-
-  AiPromptTokensDetails? buildPromptTokensDetails(Map<String, dynamic> source) {
-    return null;
+  ]) {
+    return const AiChoice();
   }
 
-  AiCompletionTokensDetails? buildCompletionTokensDetails(
-    Map<String, dynamic> source,
-  ) {
-    return null;
+  AiPromptTokensDetails buildPromptTokensDetails(AiDataSource source) {
+    return const AiPromptTokensDetails();
   }
 
-  AiTokenUsage buildTokenUsages(Map<String, dynamic> source);
+  AiCompletionTokensDetails buildCompletionTokensDetails(AiDataSource source) {
+    return const AiCompletionTokensDetails();
+  }
+
+  AiTokenUsage buildTokenUsages(AiDataSource source) {
+    return const AiTokenUsage();
+  }
 
   AiCompletionResponse<T> buildResponse<T>(
-    Map<String, dynamic> source, [
+    AiDataSource source, [
     AiResponseDataBuilder<T>? builder,
-  ]);
+  ]) {
+    return const AiCompletionResponse();
+  }
 
   Future<AiCompletionResponse<T>> completions<T>(
     AiCompletionRequest<T> request,

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import 'delegate.dart';
+import 'exception.dart';
 import 'request.dart';
 import 'response.dart';
 
@@ -14,116 +15,144 @@ class GptAiDelegate extends AiDelegate {
 
   @override
   AiMessage<T> buildMessage<T>(
-    Map<String, dynamic> source, [
+    AiDataSource source, [
     AiResponseDataBuilder<T>? builder,
   ]) {
-    final role = source["role"];
-    final content = source["content"];
-    final refusal = source["refusal"];
-    final data = content is String ? buildData(content, builder) : null;
-    return AiMessage<T>(
-      role: role is String ? role : null,
-      content: content is String ? content : null,
-      refusal: refusal is String ? refusal : null,
-      data: data,
-    );
+    try {
+      final role = source["role"];
+      final content = source["content"];
+      final refusal = source["refusal"];
+      final data = content is String ? buildData(content, builder) : null;
+      return AiMessage<T>(
+        role: role is String ? role : null,
+        content: content is String ? content : null,
+        refusal: refusal is String ? refusal : null,
+        data: data,
+      );
+    } catch (error) {
+      throw AiException("buildMessage: $error");
+    }
   }
 
   @override
   AiChoice<T> buildChoice<T>(
-    Map<String, dynamic> source, [
+    AiDataSource source, [
     AiResponseDataBuilder<T>? builder,
   ]) {
-    final index = source["index"];
-    final message = source["message"];
-    final logprobs = source["logprobs"];
-    final finishReason = source["finish_reason"];
-    return AiChoice<T>(
-      index: index is int ? index : null,
-      message: message is Map<String, dynamic>
-          ? buildMessage(message, builder)
-          : null,
-      logprobs: logprobs is bool ? logprobs : null,
-      finishReason: finishReason is String ? finishReason : null,
-    );
+    try {
+      final index = source["index"];
+      final message = source["message"];
+      final logprobs = source["logprobs"];
+      final finishReason = source["finish_reason"];
+      return AiChoice<T>(
+        index: index is num ? index.toInt() : null,
+        message: message is Map<String, dynamic>
+            ? buildMessage(message, builder)
+            : null,
+        logprobs: logprobs is bool ? logprobs : null,
+        finishReason: finishReason is String ? finishReason : null,
+      );
+    } catch (error) {
+      throw AiException("buildChoice: $error");
+    }
   }
 
   @override
-  AiPromptTokensDetails? buildPromptTokensDetails(Map<String, dynamic> source) {
-    final audioTokens = source["audio_tokens"];
-    final cachedTokens = source["cached_tokens"];
-    return AiPromptTokensDetails(
-      audioTokens: audioTokens is int ? audioTokens : null,
-      cachedTokens: cachedTokens is int ? cachedTokens : null,
-    );
+  AiPromptTokensDetails buildPromptTokensDetails(AiDataSource source) {
+    try {
+      final audioTokens = source["audio_tokens"];
+      final cachedTokens = source["cached_tokens"];
+      return AiPromptTokensDetails(
+        audioTokens: audioTokens is num ? audioTokens.toInt() : null,
+        cachedTokens: cachedTokens is num ? cachedTokens.toInt() : null,
+      );
+    } catch (error) {
+      throw AiException("buildPromptTokensDetails: $error");
+    }
   }
 
   @override
-  AiCompletionTokensDetails? buildCompletionTokensDetails(
-    Map<String, dynamic> source,
-  ) {
-    final acceptedPredictionTokens = source["accepted_prediction_tokens"];
-    final audioTokens = source["audio_tokens"];
-    final reasoningTokens = source["reasoning_tokens"];
-    final rejectedPredictionTokens = source["rejected_prediction_tokens"];
-    return AiCompletionTokensDetails(
-      acceptedPredictionTokens:
-          acceptedPredictionTokens is int ? acceptedPredictionTokens : null,
-      audioTokens: audioTokens is int ? audioTokens : null,
-      reasoningTokens: reasoningTokens is int ? reasoningTokens : null,
-      rejectedPredictionTokens:
-          rejectedPredictionTokens is int ? rejectedPredictionTokens : null,
-    );
+  AiCompletionTokensDetails buildCompletionTokensDetails(AiDataSource source) {
+    try {
+      final acceptedPredictionTokens = source["accepted_prediction_tokens"];
+      final audioTokens = source["audio_tokens"];
+      final reasoningTokens = source["reasoning_tokens"];
+      final rejectedPredictionTokens = source["rejected_prediction_tokens"];
+      return AiCompletionTokensDetails(
+        acceptedPredictionTokens: acceptedPredictionTokens is num
+            ? acceptedPredictionTokens.toInt()
+            : null,
+        audioTokens: audioTokens is num ? audioTokens.toInt() : null,
+        reasoningTokens:
+            reasoningTokens is num ? reasoningTokens.toInt() : null,
+        rejectedPredictionTokens: rejectedPredictionTokens is num
+            ? rejectedPredictionTokens.toInt()
+            : null,
+      );
+    } catch (error) {
+      throw AiException("buildCompletionTokensDetails: $error");
+    }
   }
 
   @override
-  AiTokenUsage buildTokenUsages(Map<String, dynamic> source) {
-    final promptTokens = source["prompt_tokens"];
-    final completionTokens = source["completion_tokens"];
-    final totalTokens = source["total_tokens"];
-    final promptTokensDetails = source["prompt_tokens_details"];
-    final completionTokensDetails = source["completion_tokens_details"];
-    return AiTokenUsage(
-      promptTokens: promptTokens is int ? promptTokens : null,
-      completionTokens: completionTokens is int ? completionTokens : null,
-      totalTokens: totalTokens is int ? totalTokens : null,
-      promptTokensDetails: promptTokensDetails is Map<String, dynamic>
-          ? buildPromptTokensDetails(promptTokensDetails)
-          : null,
-      completionTokensDetails: completionTokensDetails is Map<String, dynamic>
-          ? buildCompletionTokensDetails(completionTokensDetails)
-          : null,
-    );
+  AiTokenUsage buildTokenUsages(AiDataSource source) {
+    try {
+      final promptTokens = source["prompt_tokens"];
+      final completionTokens = source["completion_tokens"];
+      final totalTokens = source["total_tokens"];
+      final promptTokensDetails = source["prompt_tokens_details"];
+      final completionTokensDetails = source["completion_tokens_details"];
+      return AiTokenUsage(
+        promptTokens: promptTokens is num ? promptTokens.toInt() : null,
+        completionTokens:
+            completionTokens is num ? completionTokens.toInt() : null,
+        totalTokens: totalTokens is num ? totalTokens.toInt() : null,
+        promptTokensDetails: promptTokensDetails is Map<String, dynamic>
+            ? buildPromptTokensDetails(promptTokensDetails)
+            : null,
+        completionTokensDetails: completionTokensDetails is Map<String, dynamic>
+            ? buildCompletionTokensDetails(completionTokensDetails)
+            : null,
+      );
+    } catch (error) {
+      throw AiException("buildTokenUsages: $error");
+    }
   }
 
   @override
   AiCompletionResponse<T> buildResponse<T>(
-    Map<String, dynamic> source, [
+    AiDataSource source, [
     AiResponseDataBuilder<T>? builder,
   ]) {
-    final id = source["id"];
-    final object = source["object"];
-    final created = source["created"];
-    final model = source["model"];
-    final choices = source["choices"];
-    final usage = source["usage"];
-    final systemFingerprint = source["system_fingerprint"];
-    final serviceTier = source["service_tier"];
-    return AiCompletionResponse<T>(
-      id: id is String ? id : null,
-      object: object is String ? object : null,
-      created: created is int ? created : null,
-      model: model is String ? model : null,
-      choices: choices is List
-          ? choices.whereType<Map<String, dynamic>>().map((e) {
-              return buildChoice(e, builder);
-            }).toList()
-          : null,
-      usage: usage is Map<String, dynamic> ? buildTokenUsages(usage) : null,
-      serviceTier: serviceTier is String ? serviceTier : null,
-      systemFingerprint: systemFingerprint is String ? systemFingerprint : null,
-      statusCode: 200,
-    );
+    try {
+      final id = source["id"];
+      final object = source["object"];
+      final created = source["created"];
+      final model = source["model"];
+      final choices = source["choices"];
+      final usage = source["usage"];
+      final systemFingerprint = source["system_fingerprint"];
+      final serviceTier = source["service_tier"];
+      final response = AiCompletionResponse<T>(
+        id: id is String ? id : null,
+        object: object is String ? object : null,
+        created: created is num ? created.toInt() : null,
+        model: model is String ? model : null,
+        choices: choices is List
+            ? choices.whereType<Map<String, dynamic>>().map((e) {
+                return buildChoice(e, builder);
+              }).toList()
+            : null,
+        usage: usage is Map<String, dynamic> ? buildTokenUsages(usage) : null,
+        serviceTier: serviceTier is String ? serviceTier : null,
+        systemFingerprint:
+            systemFingerprint is String ? systemFingerprint : null,
+        statusCode: 200,
+      );
+      return response;
+    } catch (error) {
+      throw AiException("buildResponse: $error");
+    }
   }
 
   @override
@@ -159,10 +188,11 @@ class GptAiDelegate extends AiDelegate {
                 "content": !urlBased
                     ? prompt
                     : [
-                        {
-                          "type": "text",
-                          "text": prompt,
-                        },
+                        if (prompt.isNotEmpty)
+                          {
+                            "type": "text",
+                            "text": prompt,
+                          },
                         {
                           "type": "image_url",
                           "image_url": {"url": data},

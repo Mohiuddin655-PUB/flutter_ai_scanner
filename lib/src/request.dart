@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'response.dart';
 
 class AiCompletionRequest<T extends Object?> {
+  final String? tag;
   final String prompt;
   final String? _system;
   final dynamic data;
@@ -24,6 +25,7 @@ class AiCompletionRequest<T extends Object?> {
   }
 
   const AiCompletionRequest({
+    this.tag,
     required this.prompt,
     this.data,
     this.schema,
@@ -37,6 +39,7 @@ class AiCompletionRequest<T extends Object?> {
 
   @override
   int get hashCode =>
+      tag.hashCode ^
       prompt.hashCode ^
       _system.hashCode ^
       schema.hashCode ^
@@ -49,6 +52,7 @@ class AiCompletionRequest<T extends Object?> {
   @override
   bool operator ==(Object other) {
     return other is AiCompletionRequest<T> &&
+        other.tag == tag &&
         other.prompt == prompt &&
         other._system == _system &&
         other.schema == schema &&
@@ -61,6 +65,6 @@ class AiCompletionRequest<T extends Object?> {
 
   @override
   String toString() {
-    return "$AiCompletionRequest<$T>#$hashCode(prompt: $prompt, system: $_system, format: $schema, data: $data, model: $model, maxTokens: $maxTokens, n: $n, temperature: $temperature)";
+    return "$AiCompletionRequest<$T>#$hashCode(tag: $tag, prompt: $prompt, system: $_system, format: $schema, data: $data, model: $model, maxTokens: $maxTokens, n: $n, temperature: $temperature)";
   }
 }
